@@ -1,6 +1,6 @@
 # Dinko Version 2
 
-Die drei Startdateien enthalten denselben überarbeiteten Live- und Backend-Prompt für frühere JobStep-Bewerber. Sie verwenden die bisherige Stimme, `gpt-live-1` und Responses-Delegation mit `gpt-5.6-sol`. Die Gesprächsführung setzt auf eine natürliche Vorstellung der aktuellen Gelegenheit, Interesse und freiwillige Datenklärung.
+Der LiveKit-Agent verwendet den überarbeiteten Live- und Backend-Prompt für frühere JobStep-Bewerber. Sie verwenden die bisherige Stimme, `gpt-live-1` und Responses-Delegation mit `gpt-5.6-sol`. Die Gesprächsführung setzt auf eine natürliche Vorstellung der aktuellen Gelegenheit, Interesse und freiwillige Datenklärung.
 
 ## Excel bearbeiten
 
@@ -34,22 +34,9 @@ Der Reader arbeitet mit Spaltennamen, Kandidaten-ID und Feld-ID. Fehlende option
 
 Ein vorhandener Vorab-Code kann per `--prefetch` ein JSON-Objekt mit `candidate_id` und `fields` übergeben. `fields` verwendet die Feld-IDs aus Excel und enthält bereits normalisierte, tatsächlich bekannte Angaben. Dieser aktuelle Kontext hat Vorrang vor dem Export. Hier können insbesondere `experience_tasks` und `experience_duration` geliefert werden. Die ID muss zum ausgewählten Kandidaten passen. Freitextantworten und neue Angaben werden während des Gesprächs weiter ergänzt.
 
-## Drei Startmöglichkeiten
+## Start über LiveKit
 
-Für eine lokale Kontrolle ohne API-Aufruf zuerst den vorbereiteten Kontext wählen.
-
-```bash
-export DINKO_CONTEXT_FILE="$PWD/dinko-context.json"
-DINKO_DRY_RUN=1 python3 'Dinko Pet 13 v2 python.py'
-DINKO_DRY_RUN=1 node 'Dinko Pet 13 v2 node.mjs'
-DINKO_DRY_RUN=1 bash 'Dinko Pet 13 v2 curl.sh'
-```
-
-Die gemeinsame Prüfung in `dinko_v2_runtime.py` verwendet nur die Python-Standardbibliothek. Für Node.js ist eine aktuelle Version mit `fetch` und `AbortSignal.timeout` erforderlich. Die curl-Version benötigt zusätzlich `jq` und `curl`. `DINKO_PYTHON` kann für Node und curl einen bestimmten Python-Pfad vorgeben.
-
-Ein echter Session-Start benötigt zusätzlich `OPENAI_API_KEY` und das SDP-Angebot des WebRTC-Clients. Der Pfad wird über `DINKO_OFFER_FILE` gesetzt und verwendet andernfalls `offer.sdp`. Beim gewählten Starter `DINKO_DRY_RUN` entfernen. Die Ausgabe enthält die API-Antwort mit `transport.sdp` sowie das Zusatzfeld `dinko_greeting_event`.
-
-Der WebRTC-Client setzt die Remote Description und sendet `dinko_greeting_event` nach `session.started` genau einmal über den Datenkanal. Eingehendes Audio bleibt aktiv. Die Anwendung verarbeitet Live-Ereignisse, Fehler, Funktionsaufrufe und Ergebnisse. Eine erstellte Session allein bestätigt weder hörbare Begrüßung noch Speicherung. [OpenAI-Begrüßung](https://developers.openai.com/api/docs/guides/live-conversations#greet-before-the-caller-speaks), [Tool-Ergebnisse](https://developers.openai.com/api/docs/guides/live-delegation#return-tool-results-and-approvals)
+Der aktive Einstieg ist `dinko_v2_livekit.py`. Der lokale Test steht weiter unten. Die direkten OpenAI-Starter liegen als historische Fassungen unter `archive/v2/`.
 
 ## Airtable und echte Aktionen anbinden
 
