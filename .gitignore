@@ -16,6 +16,3 @@ __pycache__/
 *.xlsx
 !outputs/dinko-v2/Dinko Pet 13 v2 Steuerung.xlsx
 /data/
-/Dinko Pet 13 v1 curl
-/Dinko pet 13 node
-/Dinko pet 13 python
