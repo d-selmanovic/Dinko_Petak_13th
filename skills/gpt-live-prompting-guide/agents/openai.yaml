@@ -1,0 +1,4 @@
+interface:
+  display_name: "GPT-Live Prompting-Leitfaden"
+  short_description: "GPT-Live-Prompts prüfen, entwerfen und verbessern"
+  default_prompt: "Nutze $gpt-live-prompting-guide, prüfe zuerst meine Unterlagen auf Lücken und erstelle daraus einen Prompt für gpt-live-1."

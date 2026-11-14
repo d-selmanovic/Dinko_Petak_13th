@@ -1,0 +1,9 @@
+# GPT-Live im LiveKit-Plugin
+
+Die folgenden Hinweise stammen aus der bereitgestellten LiveKit-Dokumentation. Prüfe bei einer konkreten Implementierung die verwendete SDK-Version und die zugehörige [LiveKit-Dokumentation](https://docs.livekit.io/agents/models/realtime/gpt-live.md).
+
+- Hinterlege Gesprächsführung und Delegationsregeln in `Agent.instructions`. Hinterlege das Fachverfahren für eine Responses-Delegation in `responses_options["instructions"]` beim GPT-Live-Modell. Das Sprachmodell sieht die registrierten Tools nicht. Beschreibe im Sprachprompt daher die Anlässe für eine Delegation.
+- Bei `responses` entscheidet das Responses-Modell über Tool-Aufrufe. Registrierte `@function_tool`-Funktionen laufen im Agentenprozess. Bei `client` bearbeitet Anwendungscode die Delegation. Das Plugin ignoriert in diesem Modus registrierte Funktionstools. Das Ereignis `delegation_created` liefert eine ID. Ermittle den Auftrag aus `Agent.chat_ctx` und `pending_transcript` und verknüpfe die Antwort über diese ID bei `append_commentary`.
+- Wähle den Delegationsmodus vor dem Sitzungsstart. Berücksichtige bei der Übertragung eines direkten OpenAI-Entwurfs, dass das Plugin laut Dokumentation weder OpenAI Decisions als Delegationsmodus noch Session-Trigger bereitstellt.
+- Für eine Unterbrechung der laufenden Audiowiedergabe muss die `AgentSession` ausdrücklich eine Sprachaktivitätserkennung (VAD) erhalten. Prüfe mit Audio, ob die Wiedergabe beim Einsprechen abbricht. Der Modellkontext kann trotzdem den ganzen Agentenbeitrag enthalten. Teste daher auch, wie der Agent auf Informationen Bezug nimmt, die der Anrufer womöglich noch nicht gehört hat.
+- Prüfe Anforderungen an wortgetreue Ansagen vor dem Promptentwurf. LiveKit empfiehlt dafür eine STT–LLM–TTS-Pipeline. Eine separat abgespielte TTS-Ansage kann sich mit der GPT-Live-Ausgabe überschneiden.
