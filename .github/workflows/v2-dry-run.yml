@@ -9,20 +9,26 @@ permissions:
 
 jobs:
   v2-dry-run:
-    name: V2 dry run
+    name: V2 LiveKit configuration
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
-      DINKO_DRY_RUN: '1'
       DINKO_CONTEXT_FILE: dinko_v2_test_context.json
       DINKO_BINDINGS_FILE: ''
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - name: Python starter
-        run: python3 'Dinko Pet 13 v2 python.py' > /dev/null
-      - name: Node starter
-        run: node 'Dinko Pet 13 v2 node.mjs' > /dev/null
-      - name: Curl starter
-        run: bash 'Dinko Pet 13 v2 curl.sh' > /dev/null
+      - name: Check LiveKit entry point and synthetic session configuration
+        run: |
+          python3 -m py_compile dinko_v2_livekit.py
+          python3 - <<'PYTHON'
+          from dinko_v2_prompt import new_session
+          from dinko_v2_runtime import prepare_session
+
+          config, greeting = prepare_session(new_session())
+          assert config["model"]
+          assert config["audio"]["output"]["voice"]
+          assert config["delegation"]["responses"]["tool_choice"] == "none"
+          assert greeting["content"]
+          PYTHON
