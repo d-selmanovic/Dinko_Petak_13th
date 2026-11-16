@@ -219,7 +219,9 @@ class Prompts(unittest.TestCase):
         self.assertNotIn("+387", text)
         self.assertNotIn("rec", ctx["candidate"])
         self.assertEqual(ctx["candidate"]["first_name"], "Amir")
-        self.assertEqual(ctx["candidate"]["qualification"], "Vozač motornih vozila")
+        # Die Ausbildung bleibt in Airtable und geht nicht ins Modell.
+        self.assertNotIn("qualification", ctx["candidate"])
+        self.assertNotIn("Vozač", text)
         self.assertNotIn("profession", ctx["candidate"])
         self.assertEqual(ctx["as_of"], "2026-11-16T10:15+01:00")
         self.assertFalse(ctx["campaign"]["casting_passed"])
@@ -237,9 +239,11 @@ class Prompts(unittest.TestCase):
         ctx = prompts.kontekst({F.IME: "Amir", F.VOZACKA: "Da"}, am(16))
         self.assertIn(PITANJE_VOZACKA, ctx["call_questions"])
 
-    def test_ausbildung_ist_keine_berufserfahrung(self):
-        self.assertIn("To je školovanje, a ne radno iskustvo", prompts.VOICE)
+    def test_dinko_spricht_nicht_ueber_ausbildung_oder_beruf(self):
+        self.assertNotIn("candidate.qualification", prompts.VOICE)
+        self.assertNotIn("završenu školu", prompts.VOICE)
         self.assertNotIn("odgovara zanimanju osobe", prompts.VOICE)
+        self.assertIn("Ne govori ništa o školi, struci ni zanimanju osobe", prompts.VOICE)
 
     def test_vorname_aus_vollem_namen(self):
         ctx = prompts.kontekst({F.IME_PREZIME: "Amir Test Primjer"}, am(16))
