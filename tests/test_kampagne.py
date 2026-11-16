@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dinko_kampagne import prompts, zeit  # noqa: E402
 from dinko_kampagne.airtable import FakeStore, gueltige_record_id  # noqa: E402
-from dinko_kampagne.config import CAMPAIGN, PITANJA, TZ, F  # noqa: E402
+from dinko_kampagne.config import CAMPAIGN, PITANJA, PITANJE_VOZACKA, TZ, F  # noqa: E402
 from dinko_kampagne.ishod import Stanje, obradi_ishod, zavrsna_polja  # noqa: E402
 
 REC = "recAAAAAAAAAAAAAA"
@@ -211,7 +211,7 @@ class Prompts(unittest.TestCase):
         polja = {
             F.IME: "Amir",
             F.PREZIME: "Test",
-            F.ZANIMANJE: "bagerista",
+            F.KVALIFIKACIJA: "Vozač motornih vozila",
             "fldHIQHuixlddGmrB": "+38761000000",
         }
         ctx = prompts.kontekst(polja, am(16, 10, 15))
@@ -219,11 +219,27 @@ class Prompts(unittest.TestCase):
         self.assertNotIn("+387", text)
         self.assertNotIn("rec", ctx["candidate"])
         self.assertEqual(ctx["candidate"]["first_name"], "Amir")
-        self.assertEqual(ctx["candidate"]["profession"], "bagerista")
+        self.assertEqual(ctx["candidate"]["qualification"], "Vozač motornih vozila")
+        self.assertNotIn("profession", ctx["candidate"])
         self.assertEqual(ctx["as_of"], "2026-11-16T10:15+01:00")
         self.assertFalse(ctx["campaign"]["casting_passed"])
         self.assertTrue(ctx["campaign"]["casting_phrase"].startswith("prekosutra"))
+        self.assertEqual(ctx["call_questions"], [*PITANJA, PITANJE_VOZACKA])
+
+    def test_fuehrerschein_bekannt_wird_nicht_gefragt(self):
+        ctx = prompts.kontekst({F.IME: "Amir", F.VOZACKA: "Da", F.VOZACKE_KATEGORIJE: "B,C"}, am(16))
+        self.assertEqual(ctx["candidate"]["driving_licence"], "ima, kategorije B,C")
         self.assertEqual(ctx["call_questions"], list(PITANJA))
+        ctx = prompts.kontekst({F.IME: "Amir", F.VOZACKA: "Ne"}, am(16))
+        self.assertEqual(ctx["candidate"]["driving_licence"], "nema")
+        self.assertNotIn(PITANJE_VOZACKA, ctx["call_questions"])
+        # „Da“ ohne Kategorien: Kategorien fehlen, also fragen.
+        ctx = prompts.kontekst({F.IME: "Amir", F.VOZACKA: "Da"}, am(16))
+        self.assertIn(PITANJE_VOZACKA, ctx["call_questions"])
+
+    def test_ausbildung_ist_keine_berufserfahrung(self):
+        self.assertIn("To je školovanje, a ne radno iskustvo", prompts.VOICE)
+        self.assertNotIn("odgovara zanimanju osobe", prompts.VOICE)
 
     def test_vorname_aus_vollem_namen(self):
         ctx = prompts.kontekst({F.IME_PREZIME: "Amir Test Primjer"}, am(16))
@@ -238,7 +254,7 @@ class Prompts(unittest.TestCase):
     def test_zahlen_ausgeschrieben(self):
         for schluessel, text in CAMPAIGN.items():
             self.assertIsNone(re.search(r"\d", text), schluessel)
-        for frage in PITANJA:
+        for frage in (*PITANJA, PITANJE_VOZACKA):
             self.assertIsNone(re.search(r"\d", frage))
 
     def test_kontext_haengt_an_beiden_prompts(self):

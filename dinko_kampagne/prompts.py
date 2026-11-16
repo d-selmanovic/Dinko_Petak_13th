@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Any
 
 from . import zeit
-from .config import CAMPAIGN, PITANJA, F
+from .config import CAMPAIGN, PITANJA, PITANJE_VOZACKA, F
 
 VOICE = """ULOGA I SVRHA
 
@@ -36,7 +36,8 @@ Ako se javi druga osoba ili je broj pogrešan, ljubazno se izvini i završi. Ako
 
 RAZLOG POZIVA I PONUDA
 
-Nakon potvrde identiteta reci da se javljaš zbog ranije prijave u JobStepu i da imate novu priliku za posao u Njemačkoj koja odgovara zanimanju osobe. Pitaj ima li minutu da čuje o čemu se radi.
+Nakon potvrde identiteta reci da se javljaš zbog ranije prijave u JobStepu i da imate novu priliku za posao u Njemačkoj. Pitaj ima li minutu da čuje o čemu se radi.
+Ako je candidate.qualification popunjeno, možeš reći da prema prijavi osoba ima završenu školu, odnosno kvalifikaciju tog naziva. Ako ih je navedeno više, spomeni samo jednu. To je školovanje, a ne radno iskustvo: ne tvrdi da je osoba radila u toj struci i ne tvrdi da posao odgovara njenom zanimanju.
 Ako pristane, predstavi ponudu iz campaign.pitch i glavne prednosti iz campaign.benefits u najviše tri kratke rečenice. Zatim reci kada je casting, koristeći campaign.casting_phrase tačno kako je napisano. Ne računaj datum sam i ne mijenjaj dan.
 Onda pitaj zanima li je to i može li doći na casting.
 Ako je campaign.casting_passed tačno, ne nudi taj termin. Reci da će kolege javiti novi termin.
@@ -52,7 +53,7 @@ Ako pita odakle ti njen broj, objasni raniju prijavu u JobStepu, bez izmišljanj
 PITANJA O USLOVIMA
 
 Kad osoba kaže da je zainteresovana, postavi pitanja iz call_questions, jedno po jedno, prirodnim riječima. Ne dodaji vlastita pitanja i ne pravi upitnik.
-Ako je osoba neki odgovor već dala u razgovoru, ne pitaj ponovo. Ako ne želi odgovoriti, prihvati to i idi dalje. Ako je dio odgovora nejasan, pitaj samo za taj dio.
+Ako je candidate.driving_licence popunjeno, vozačku dozvolu ne pitaj. Ako je osoba neki odgovor već dala u razgovoru, ne pitaj ponovo. Ako ne želi odgovoriti, prihvati to i idi dalje. Ako je dio odgovora nejasan, pitaj samo za taj dio.
 
 NAJAVA KOLEGE I ZAVRŠETAK
 
@@ -144,12 +145,23 @@ def kontekst(polja: dict[str, Any], now: datetime) -> dict[str, Any]:
         dijelovi = str(polja.get(F.IME_PREZIME) or "").split()
         ime = dijelovi[0] if dijelovi else ""
         prezime = prezime or " ".join(dijelovi[1:])
+    vozacka = str(polja.get(F.VOZACKA) or "").strip().lower()
+    kategorije = str(polja.get(F.VOZACKE_KATEGORIJE) or "").strip()
+    if kategorije:
+        dozvola = f"ima, kategorije {kategorije}"
+    elif vozacka == "ne":
+        dozvola = "nema"
+    else:
+        dozvola = ""  # unbekannt → Dinko fragt
+    pitanja = list(PITANJA) if dozvola else [*PITANJA, PITANJE_VOZACKA]
     return {
         "as_of": now.isoformat(timespec="minutes"),
         "candidate": {
             "first_name": ime,
             "last_name": prezime,
-            "profession": str(polja.get(F.ZANIMANJE) or "").strip(),
+            # Ausbildung laut früherer Bewerbung, keine Berufserfahrung.
+            "qualification": str(polja.get(F.KVALIFIKACIJA) or "").strip(),
+            "driving_licence": dozvola,
         },
         "campaign": {
             **CAMPAIGN,
@@ -157,7 +169,7 @@ def kontekst(polja: dict[str, Any], now: datetime) -> dict[str, Any]:
             "casting_passed": zeit.casting_passed(now),
             "callback_deadline_phrase": zeit.callback_deadline_phrase(now),
         },
-        "call_questions": list(PITANJA),
+        "call_questions": pitanja,
     }
 
 

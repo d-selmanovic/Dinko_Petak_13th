@@ -22,7 +22,9 @@ Testanruf.
 1. Der Wählautomat (n8n) startet den Anruf über LiveKit und übergibt
    `{"record_id": "rec..."}` als Dispatch-Metadaten. Der Agent wählt nicht selbst.
 2. Der Agent liest den Datensatz aus Airtable. Ins Modell gehen nur Vorname, Nachname,
-   Beruf und die Kampagnen-Fakten, keine Telefonnummer.
+   Ausbildung, Führerschein und die Kampagnen-Fakten, keine Telefonnummer. Die Ausbildung
+   (`Kvalifikacija`) nennt Dinko als Schulabschluss, nicht als Berufserfahrung. Ist der
+   Führerschein aus dem CRM bekannt, fragt Dinko nicht mehr danach.
 3. Dinko wartet, bis sich jemand meldet (Anrufbeantworter-Erkennung). Bei Mailbox: kurze
    Nachricht, dann auflegen.
 4. Das Backend-Modell trägt das Ergebnis mit `record_outcome` ein, zuerst
@@ -44,7 +46,7 @@ Basis „GIG Casting“, Tabelle „Dinko – Kandidati“ (`tbl7UjnrJQXGzFPKH`)
 
 | Wer | Schreibt |
 |---|---|
-| Import | `Ime`, `Prezime`, `Telefon (E.164)`, `Zanimanje`, `Redoslijed poziva`, `Poziv odobren` |
+| Import | `Ime`, `Prezime`, `Telefon (E.164)`, `Kvalifikacija (školovanje)`, `Vozačka dozvola`, `Vozačke kategorije`, `Lista`, `Prioritet`, `Redoslijed poziva`, `Poziv odobren`, dazu CRM-Felder, die Dinko nicht nutzt |
 | Wählautomat (n8n) | `Dinko status` = „u toku“, `Broj pokušaja`, `Zadnji poziv`, `Sljedeći pokušaj`, `Pokušaj ID` |
 | Agent im Gespräch | `Ishod`, `Može na casting`, `Odgovori`, `Napomena za kolegu`, `Željeni poziv (tekst)`, `Željeni poziv (vrijeme)`, `Ne zovi (DNC)` |
 | Agent am Ende | `Dinko status` (razgovor obavljen / nije se javio / govorna pošta), `Link transkript`, `Ishod` = „nejasno“, falls gesprochen wurde und nichts eingetragen ist |
