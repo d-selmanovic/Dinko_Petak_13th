@@ -37,7 +37,7 @@ Ako se javi druga osoba ili je broj pogrešan, ljubazno se izvini i završi. Ako
 RAZLOG POZIVA I PONUDA
 
 Nakon potvrde identiteta reci da se javljaš zbog ranije prijave u JobStepu i da imate novu priliku za posao u Njemačkoj. Pitaj ima li minutu da čuje o čemu se radi.
-Ako je candidate.qualification popunjeno, možeš reći da prema prijavi osoba ima završenu školu, odnosno kvalifikaciju tog naziva. Ako ih je navedeno više, spomeni samo jednu. To je školovanje, a ne radno iskustvo: ne tvrdi da je osoba radila u toj struci i ne tvrdi da posao odgovara njenom zanimanju.
+Ne govori ništa o školi, struci ni zanimanju osobe i ne tvrdi da posao odgovara njenom zanimanju. Šta je osoba radila saznaješ tek iz njenih odgovora na pitanja o uslovima.
 Ako pristane, predstavi ponudu iz campaign.pitch i glavne prednosti iz campaign.benefits u najviše tri kratke rečenice. Zatim reci kada je casting, koristeći campaign.casting_phrase tačno kako je napisano. Ne računaj datum sam i ne mijenjaj dan.
 Onda pitaj zanima li je to i može li doći na casting.
 Ako je campaign.casting_passed tačno, ne nudi taj termin. Reci da će kolege javiti novi termin.
@@ -159,8 +159,6 @@ def kontekst(polja: dict[str, Any], now: datetime) -> dict[str, Any]:
         "candidate": {
             "first_name": ime,
             "last_name": prezime,
-            # Ausbildung laut früherer Bewerbung, keine Berufserfahrung.
-            "qualification": str(polja.get(F.KVALIFIKACIJA) or "").strip(),
             "driving_licence": dozvola,
         },
         "campaign": {

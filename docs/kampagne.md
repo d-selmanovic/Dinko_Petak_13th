@@ -22,9 +22,10 @@ Testanruf.
 1. Der Wählautomat (n8n) startet den Anruf über LiveKit und übergibt
    `{"record_id": "rec..."}` als Dispatch-Metadaten. Der Agent wählt nicht selbst.
 2. Der Agent liest den Datensatz aus Airtable. Ins Modell gehen nur Vorname, Nachname,
-   Ausbildung, Führerschein und die Kampagnen-Fakten, keine Telefonnummer. Die Ausbildung
-   (`Kvalifikacija`) nennt Dinko als Schulabschluss, nicht als Berufserfahrung. Ist der
-   Führerschein aus dem CRM bekannt, fragt Dinko nicht mehr danach.
+   Führerschein und die Kampagnen-Fakten, keine Telefonnummer. Die Ausbildung
+   (`Kvalifikacija`) bleibt in Airtable für die Kollegen; Dinko kennt sie nicht und spricht
+   weder über Schule noch über Beruf. Ist der Führerschein aus dem CRM bekannt, fragt Dinko
+   nicht mehr danach.
 3. Dinko wartet, bis sich jemand meldet (Anrufbeantworter-Erkennung). Bei Mailbox: kurze
    Nachricht, dann auflegen.
 4. Das Backend-Modell trägt das Ergebnis mit `record_outcome` ein, zuerst
