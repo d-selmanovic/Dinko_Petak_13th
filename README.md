@@ -16,6 +16,19 @@ Die früheren direkten OpenAI-Starter liegen als historische Fassungen in [archi
 
 Für die Excel-Vorbereitung `python3 -m pip install -r requirements-excel.txt` in einer virtuellen Umgebung ausführen. Die Detailanleitung beschreibt die erwarteten Eingaben. Die LiveKit-Abhängigkeiten stehen separat in `requirements-livekit.txt`. Die Variablen in `.env.example` dienen als Vorlage für die Shell-Konfiguration.
 
+## Kampagne Casting 18.11.2026
+
+Ausgehender Kurzanruf mit Ergebnis in Airtable, ohne Weiterleitung. Der v2-Code bleibt unverändert.
+
+```bash
+python3 -m unittest discover -s tests          # Tests, ohne LiveKit-Pakete lauffähig
+pip install -r requirements-kampagne.txt
+python3 dinko_kampagne_livekit.py dev          # braucht LiveKit- und OpenAI-Zugang sowie AIRTABLE_API_KEY
+```
+
+Ablauf, Airtable-Felder, Meldung und Deployment: [Kampagne](docs/kampagne.md).
+
+- [Kampagne Casting 18.11.2026](docs/kampagne.md)
 - [V2-Anleitung](Dinko%20Pet%2013%20v2%20Hinweise.md)
 - [Datenfluss und Integrationsstand](docs/architecture.md)
 - [Projektregeln](AGENTS.md)
