@@ -16,3 +16,5 @@ __pycache__/
 *.xlsx
 !outputs/dinko-v2/Dinko Pet 13 v2 Steuerung.xlsx
 /data/
+# Entsteht bei `lk agent create`; bindet den lokalen Ordner an Projekt und Agent.
+livekit.toml

@@ -78,6 +78,11 @@ kein Transkript, ohne `LANGFUSE_*` kein Tracing; der Anruf läuft trotzdem.
 
 Die Anrufbeantworter-Erkennung und die Rauschunterdrückung laufen über LiveKit Cloud.
 
+Angelegt am 16.11.2026: Agent-ID `CA_g54xPLuXH2bE`, Projekt `lina-oai-kk6g8p5z`, Region
+eu-central. `lk agent create` hat dabei lokal eine `livekit.toml` geschrieben; sie steht in
+`.gitignore` und bleibt auf dem Rechner, von dem deployt wird. Neuer Stand:
+`git pull`, dann `lk agent deploy`.
+
 ## Offen
 
 - Voraussetzungsfragen (`PITANJA` in `config.py`) sind vorbelegt, nicht endgültig.
