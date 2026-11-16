@@ -30,7 +30,9 @@ class F:
     IME_PREZIME = "fldHp5uj6eH1MaNnT"
     IME = "fld5Czg92Vpzcnphf"
     PREZIME = "fldWClwIbF6pOUi0R"
-    ZANIMANJE = "fldqo8or0Zd3VkUao"
+    KVALIFIKACIJA = "fldqo8or0Zd3VkUao"  # Ausbildung laut CRM, keine Berufserfahrung
+    VOZACKA = "fldXqec7XoVVS7K0Q"
+    VOZACKE_KATEGORIJE = "fldIwqHRRn9dfEAYt"
     DNC = "fldwb5woIx3HQWSWv"
     DINKO_STATUS = "fldAKXa0Z2ZRWMWdK"
     ISHOD = "fldrpzAxEGBzpa3sc"
@@ -114,7 +116,8 @@ CAMPAIGN = {
 
 # Voraussetzungsfragen. Vorbelegung, der Auftraggeber legt die endgültigen zwei bis drei fest.
 PITANJA = (
-    "Koje si konkretne poslove do sada radio na gradilištu ili u niskogradnji?",
+    "Šta si do sada radio, i imaš li iskustva na gradilištu ili u niskogradnji?",
     "Koliko dugo si radio te poslove?",
-    "Imaš li vozačku dozvolu, i koje kategorije?",
 )
+# Entfällt, wenn der Führerschein schon aus dem CRM bekannt ist.
+PITANJE_VOZACKA = "Imaš li vozačku dozvolu, i koje kategorije?"
