@@ -22,7 +22,7 @@ Ausgehender Kurzanruf mit Ergebnis in Airtable, ohne Weiterleitung. Der v2-Code 
 
 ```bash
 python3 -m unittest discover -s tests          # Tests, ohne LiveKit-Pakete lauffähig
-pip install -r requirements-kampagne.txt
+pip install -r requirements.txt
 python3 dinko_kampagne_livekit.py dev          # braucht LiveKit- und OpenAI-Zugang sowie AIRTABLE_API_KEY
 ```
 
