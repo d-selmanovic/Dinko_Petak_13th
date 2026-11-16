@@ -31,6 +31,12 @@ from livekit.agents.beta import EndCallTool
 from livekit.plugins import silero
 from livekit.plugins.openai.realtime import GPTLiveModel
 
+# Plugins müssen beim Start im Hauptthread geladen werden, nicht erst im Anruf.
+try:
+    from livekit.plugins import ai_coustics
+except ImportError:  # ohne das Paket läuft Dinko ohne Rauschunterdrückung
+    ai_coustics = None
+
 from dinko_kampagne import prompts, r2, zeit
 from dinko_kampagne.agent import DinkoKampagne
 from dinko_kampagne.airtable import AirtableStore, gueltige_record_id
@@ -93,18 +99,20 @@ def _room_options() -> room_io.RoomOptions:
     """Rauschunterdrückung wie bei Lina (GSM-Leitung). Aus mit DINKO_NOISE_CANCELLATION=0."""
     if os.getenv("DINKO_NOISE_CANCELLATION", "1") != "1":
         return room_io.RoomOptions()
-    try:
-        from livekit.plugins import ai_coustics
-    except ImportError:
+    if ai_coustics is None:
         logger.warning("ai_coustics nicht installiert – ohne Rauschunterdrückung")
         return room_io.RoomOptions()
-    return room_io.RoomOptions(
-        audio_input=room_io.AudioInputOptions(
-            noise_cancellation=ai_coustics.audio_enhancement(
-                model=ai_coustics.EnhancerModel.QUAIL_VF_S
+    try:
+        return room_io.RoomOptions(
+            audio_input=room_io.AudioInputOptions(
+                noise_cancellation=ai_coustics.audio_enhancement(
+                    model=ai_coustics.EnhancerModel.QUAIL_VF_S
+                ),
             ),
-        ),
-    )
+        )
+    except Exception:
+        logger.exception("Rauschunterdrückung nicht verfügbar – ohne weiter")
+        return room_io.RoomOptions()
 
 
 async def _auflegen(ctx: JobContext) -> None:
