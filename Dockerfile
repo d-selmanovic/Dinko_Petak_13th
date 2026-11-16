@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y gcc g++ python3-dev \
 WORKDIR /app
 RUN python -m venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
-COPY requirements-livekit.txt requirements-kampagne.txt ./
-RUN pip install --no-cache-dir -r requirements-kampagne.txt
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 COPY dinko_kampagne ./dinko_kampagne
 COPY dinko_kampagne_livekit.py ./
 # Modelldateien (Silero VAD) vorab laden, damit der Start nicht darauf wartet.

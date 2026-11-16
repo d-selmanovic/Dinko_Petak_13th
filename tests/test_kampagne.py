@@ -261,6 +261,15 @@ class Airtable(unittest.TestCase):
         self.assertEqual(asyncio.run(store.ucitaj(REC))[F.ISHOD], "nejasno")
 
 
+class Abhaengigkeiten(unittest.TestCase):
+    def test_requirements_txt_enthaelt_die_livekit_versionen(self):
+        """Die LiveKit-CLI braucht requirements.txt; die Versionen dürfen nicht auseinanderlaufen."""
+        wurzel = Path(__file__).resolve().parents[1]
+        alle = (wurzel / "requirements.txt").read_text(encoding="utf-8").split()
+        for zeile in (wurzel / "requirements-livekit.txt").read_text(encoding="utf-8").split():
+            self.assertIn(zeile, alle)
+
+
 @unittest.skipUnless(importlib.util.find_spec("livekit"), "LiveKit nicht installiert")
 class LiveKit(unittest.TestCase):
     def test_agent_hat_die_tools(self):

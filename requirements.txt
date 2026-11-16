@@ -1,0 +1,7 @@
+# Abhängigkeiten der Dinko-Kampagne (dinko_kampagne_livekit.py).
+# Die LiveKit-CLI erkennt den Ordner an dieser Datei als Agent-Projekt.
+livekit-agents==1.8.12
+livekit-plugins-openai==1.8.12
+livekit-plugins-silero==1.8.12
+livekit-plugins-ai-coustics==0.3.5
+opentelemetry-exporter-otlp-proto-http==1.45.2
