@@ -31,6 +31,11 @@ from livekit.agents.beta import EndCallTool
 from livekit.plugins import silero
 from livekit.plugins.openai.realtime import GPTLiveModel
 
+try:  # Standard-Prompt der Anrufbeantworter-Erkennung; ohne ihn bleibt der Standard aktiv.
+    from livekit.agents.voice.amd.classifier import AMD_PROMPT
+except ImportError:
+    AMD_PROMPT = None
+
 # Plugins müssen beim Start im Hauptthread geladen werden, nicht erst im Anruf.
 try:
     from livekit.plugins import ai_coustics
@@ -44,6 +49,7 @@ from dinko_kampagne.config import AGENT_NAME, CAMPAIGN_ID, VERSION, F
 from dinko_kampagne.dialog import DialogProtokoll
 from dinko_kampagne.ishod import Stanje, zavrsna_polja
 from dinko_kampagne.telemetrie import setup_langfuse, umgebung
+from dinko_kampagne.tisina import Tisina
 
 logger = logging.getLogger("dinko.kampagne")
 
@@ -63,6 +69,20 @@ def _record_id(ctx: JobContext) -> str | None:
         return rid
     logger.error("Kein gültiges record_id in den Dispatch-Metadaten")
     return None
+
+
+def _sekunden(name: str, standard: float) -> float:
+    try:
+        return float(os.getenv(name, str(standard)))
+    except ValueError:
+        return standard
+
+
+def _amd_optionen() -> dict:
+    """Erkennung mit bosnischen Beispielen. DINKO_AMD_PROMPT=0 nimmt den LiveKit-Standard."""
+    if AMD_PROMPT is None or os.getenv("DINKO_AMD_PROMPT", "1") != "1":
+        return {}
+    return {"prompt": AMD_PROMPT + "\n\n" + prompts.AMD_DODATAK}
 
 
 def _stimme() -> str | dict[str, str]:
@@ -169,6 +189,7 @@ async def entrypoint(ctx: JobContext) -> None:
     stanje = Stanje(record_id=record_id)
     ctx_daten = prompts.kontekst(polja, zeit.sada())
 
+    tisina_s = _sekunden("DINKO_SILENCE_S", 7.0)
     session = AgentSession(
         llm=GPTLiveModel(
             model=os.getenv("DINKO_VOICE_MODEL", "gpt-live-1"),
@@ -180,7 +201,24 @@ async def entrypoint(ctx: JobContext) -> None:
         # Wiedergabe stoppt.
         vad=silero.VAD.load(),
         userdata=stanje,
+        # Stille auf beiden Seiten: nach so vielen Sekunden fragt Dinko einmal nach.
+        user_away_timeout=tisina_s if tisina_s > 0 else None,
     )
+
+    async def _nachfragen() -> None:
+        handle = session.generate_reply(instructions=prompts.PROVJERA_TISINE)
+        await handle.wait_for_playout()
+
+    tisina = Tisina(
+        nachfragen=_nachfragen,
+        auflegen=lambda grund: ctx.shutdown(reason=grund),
+        nach_s=_sekunden("DINKO_SILENCE_HANGUP_S", 8.0),
+        gespraech_fertig=stanje.zavrsen,
+    )
+
+    @session.on("user_state_changed")
+    def _stanje_kandidata(ev) -> None:
+        tisina.user_state(str(getattr(ev, "new_state", "")))
 
     protokoll = DialogProtokoll()
     if dialog_prozessor is not None:
@@ -249,6 +287,22 @@ async def entrypoint(ctx: JobContext) -> None:
     await session.start(agent=agent, room=ctx.room, room_options=_room_options())
     await ctx.connect()
 
+    # Harte Obergrenze: kein Anruf belegt die Leitung länger als DINKO_MAX_CALL_S.
+    max_s = _sekunden("DINKO_MAX_CALL_S", 480.0)
+    if max_s > 0:
+
+        async def _obergrenze() -> None:
+            await asyncio.sleep(max_s)
+            logger.warning("Obergrenze von %.0f s erreicht – auflegen", max_s)
+            ctx.shutdown(reason="max duration")
+
+        obergrenze = asyncio.create_task(_obergrenze())
+
+        async def _obergrenze_beenden() -> None:
+            obergrenze.cancel()
+
+        ctx.add_shutdown_callback(_obergrenze_beenden)
+
     # Nicht sofort reden: warten, bis sich die angerufene Person meldet.
     try:
         async with AMD(
@@ -257,6 +311,7 @@ async def entrypoint(ctx: JobContext) -> None:
             # dem Lina-Projekt); Nova-3 hat einen EU-Endpunkt und Bosnisch.
             stt=os.getenv("DINKO_AMD_STT", "deepgram/nova-3:bs"),
             ivr_detection=False,
+            **({"detection_options": amd_optionen} if (amd_optionen := _amd_optionen()) else {}),
         ) as detector:
             amd = await detector.execute()
         stanje.amd = str(getattr(amd.category, "value", amd.category))
@@ -276,6 +331,14 @@ async def entrypoint(ctx: JobContext) -> None:
     if stanje.amd == "machine-unavailable":
         ctx.shutdown(reason="mailbox unavailable")
         return
+
+    # Ab jetzt gilt die Stille-Behandlung. War es während der Erkennung schon still, steht
+    # der Zustand auf „away“ und der Zähler muss neu anlaufen.
+    tisina.aktiviere()
+    try:
+        session.reset_away_timer()
+    except Exception:
+        logger.exception("Stille-Zähler nicht neu gestartet")
 
     # Sicherheitsnetz: Meldet sich ein Mensch und Dinko bleibt still, begrüßt der Code.
     try:

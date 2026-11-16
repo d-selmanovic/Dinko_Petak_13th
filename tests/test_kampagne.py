@@ -21,6 +21,7 @@ from dinko_kampagne import prompts, zeit  # noqa: E402
 from dinko_kampagne.airtable import FakeStore, gueltige_record_id  # noqa: E402
 from dinko_kampagne.config import CAMPAIGN, PITANJA, PITANJE_VOZACKA, TZ, F  # noqa: E402
 from dinko_kampagne.ishod import Stanje, obradi_ishod, zavrsna_polja  # noqa: E402
+from dinko_kampagne.tisina import Tisina  # noqa: E402
 
 REC = "recAAAAAAAAAAAAAA"
 
@@ -290,6 +291,121 @@ class Abhaengigkeiten(unittest.TestCase):
             self.assertIn(zeile, alle)
 
 
+class Gespraechsanfang(unittest.TestCase):
+    def test_vorstellung_nur_einmal_und_nur_vorname(self):
+        self.assertIn("Predstavi se samo jednom u cijelom razgovoru", prompts.VOICE)
+        self.assertIn("Pitaj samo imenom, bez prezimena", prompts.VOICE)
+        self.assertIn("„Jesam li dobio …?“", prompts.VOICE)
+        self.assertIn("samo imenom", prompts.POZDRAV_REZERVA)
+
+    def test_technische_abschnitte_bleiben(self):
+        for titel in (
+            "Backchannel policy:",
+            "Interruption policy:",
+            "Delegation policy:",
+            "Backend tools:",
+            "Generate <|SpawnThinking|> when:",
+            "Do not generate <|SpawnThinking|> when:",
+        ):
+            self.assertIn(titel, prompts.VOICE)
+
+    def test_erkennung_kennt_kurze_bosnische_meldungen(self):
+        for wort in ('"Halo"', '"Molim?"', '"Ona,"', "Output: human", "machine-vm"):
+            self.assertIn(wort, prompts.AMD_DODATAK)
+
+    def test_nachfrage_bei_stille_ohne_neue_vorstellung(self):
+        self.assertIn("jesi li tu", prompts.PROVJERA_TISINE)
+        self.assertIn("Ne ponavljaj predstavljanje", prompts.PROVJERA_TISINE)
+
+
+class Stille(unittest.TestCase):
+    def _baue(self, **kw):
+        log: list[str] = []
+
+        async def nachfragen() -> None:
+            log.append("nachfrage")
+
+        async def sleep(_s: float) -> None:
+            await asyncio.sleep(0)
+
+        t = Tisina(
+            nachfragen=nachfragen, auflegen=lambda g: log.append("auflegen:" + g), sleep=sleep, **kw
+        )
+        return t, log
+
+    def test_vor_der_erkennung_passiert_nichts(self):
+        async def lauf():
+            t, log = self._baue()
+            self.assertIsNone(t.user_state("away"))
+            return log
+
+        self.assertEqual(asyncio.run(lauf()), [])
+
+    def test_nachfragen_dann_auflegen(self):
+        async def lauf():
+            t, log = self._baue()
+            t.aktiviere()
+            await t.user_state("away")
+            return log
+
+        self.assertEqual(asyncio.run(lauf()), ["nachfrage", "auflegen:silence"])
+
+    def test_antwort_nach_der_nachfrage_haelt_das_gespraech(self):
+        async def lauf():
+            t, log = self._baue()
+            t.aktiviere()
+            task = t.user_state("away")
+            await asyncio.sleep(0)  # Nachfrage läuft
+            t.user_state("speaking")
+            t.user_state("listening")
+            await task
+            return log
+
+        self.assertEqual(asyncio.run(lauf()), ["nachfrage"])
+
+    def test_dritte_stille_legt_ohne_nachfrage_auf(self):
+        async def lauf():
+            t, log = self._baue()
+            t.aktiviere()
+            for _ in range(2):
+                task = t.user_state("away")
+                await asyncio.sleep(0)
+                t.user_state("speaking")
+                await task
+            self.assertIsNone(t.user_state("away"))
+            self.assertIsNone(t.user_state("away"))  # kein zweites Auflegen
+            return log
+
+        self.assertEqual(asyncio.run(lauf()), ["nachfrage", "nachfrage", "auflegen:silence"])
+
+    def test_nach_dem_ergebnis_wird_sofort_aufgelegt(self):
+        async def lauf():
+            t, log = self._baue(gespraech_fertig=lambda: True)
+            t.aktiviere()
+            self.assertIsNone(t.user_state("away"))
+            return log
+
+        self.assertEqual(asyncio.run(lauf()), ["auflegen:silence after outcome"])
+
+    def test_fehler_bei_der_nachfrage_legt_trotzdem_auf(self):
+        async def lauf():
+            log: list[str] = []
+
+            async def kaputt() -> None:
+                raise RuntimeError("x")
+
+            async def sleep(_s: float) -> None:
+                await asyncio.sleep(0)
+
+            t = Tisina(nachfragen=kaputt, auflegen=lambda g: log.append(g), sleep=sleep)
+            t.aktiviere()
+            await t.user_state("away")
+            return log
+
+        with self.assertLogs("dinko.tisina", level="ERROR"):
+            self.assertEqual(asyncio.run(lauf()), ["silence"])
+
+
 @unittest.skipUnless(importlib.util.find_spec("livekit"), "LiveKit nicht installiert")
 class LiveKit(unittest.TestCase):
     def test_agent_hat_die_tools(self):
@@ -318,6 +434,24 @@ class LiveKit(unittest.TestCase):
         self.assertIs(opts["parallel_tool_calls"], False)
         self.assertEqual(opts["reasoning"], {"effort": "low"})
         self.assertEqual(einstieg._stimme(), {"id": einstieg.STANDARD_STIMME})
+
+    def test_erkennung_und_stille_passen_zur_livekit_version(self):
+        import inspect
+
+        from livekit.agents import AMD, AgentSession
+        from livekit.agents.voice.amd.detector import DetectionOptions
+
+        import dinko_kampagne_livekit as einstieg
+
+        opts = einstieg._amd_optionen()
+        self.assertIn("Classify the call greeting", opts["prompt"])
+        self.assertTrue(opts["prompt"].endswith(prompts.AMD_DODATAK))
+        self.assertIn("prompt", DetectionOptions.__annotations__)
+        self.assertIn("detection_options", inspect.signature(AMD.__init__).parameters)
+        self.assertIn("user_away_timeout", inspect.signature(AgentSession.__init__).parameters)
+        self.assertTrue(hasattr(AgentSession, "reset_away_timer"))
+        self.assertTrue(hasattr(AgentSession, "user_state"))
+        self.assertEqual(einstieg._sekunden("DINKO_GIBT_ES_NICHT", 7.0), 7.0)
 
 
 if __name__ == "__main__":

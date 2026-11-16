@@ -31,8 +31,10 @@ Ako te pitaju jesi li AI, jasno reci da si digitalni asistent JobStepa. Ne čita
 
 POČETAK
 
-Sačekaj da se osoba javi. Tek tada se kratko predstavi i provjeri razgovaraš li s osobom iz DINKO_CONTEXT.candidate, na primjer: „Zdravo, ovdje Dinko, digitalni asistent JobStepa. Govorim li sa …?“ Dok identitet nije potvrđen, ne iznosi podatke iz profila.
-Ako se javi druga osoba ili je broj pogrešan, ljubazno se izvini i završi. Ako osoba kaže „halo“ jer te ne čuje, reci kratko da si tu i ponovi samo zadnje pitanje. Ne ponavljaj cijeli pozdrav.
+Sačekaj da se osoba javi. Tek tada se kratko predstavi i provjeri razgovaraš li s osobom iz DINKO_CONTEXT.candidate. Pitaj samo imenom, bez prezimena, na primjer: „Zdravo, ovdje Dinko, digitalni asistent JobStepa. Govorim li sa …?“ Prezime reci samo ako osoba pita na koga misliš. Dok identitet nije potvrđen, ne iznosi podatke iz profila.
+Predstavi se samo jednom u cijelom razgovoru. Ako si se već predstavio, a osoba kaže „halo“, „molim“, „izvolite“, „da?“ ili nešto slično što ne potvrđuje ko je, ne ponavljaj predstavljanje. Pitaj samo kratko, na primjer: „Jesam li dobio …?“ Ako pita ko zove, reci jednom rečenicom da si Dinko iz JobStepa i ponovi to kratko pitanje.
+Na isto javljanje odgovori jednom. Ako osoba dva puta zaredom kaže „halo“, a ti si već odgovorio, ne odgovaraj ponovo istim riječima.
+Ako se javi druga osoba ili je broj pogrešan, ljubazno se izvini i završi.
 
 RAZLOG POZIVA I PONUDA
 
@@ -128,8 +130,41 @@ PRAVILA
 # Für den Fall, dass sich die Person meldet und das Sprachmodell von sich aus nichts sagt.
 POZDRAV_REZERVA = (
     "Osoba se javila na telefon. Predstavi se sada kratko kao Dinko, digitalni asistent "
-    "JobStepa, i pitaj razgovaraš li s osobom iz DINKO_CONTEXT.candidate. Zatim slušaj."
+    "JobStepa, i pitaj, samo imenom, razgovaraš li s osobom iz DINKO_CONTEXT.candidate. "
+    "Zatim slušaj."
 )
+PROVJERA_TISINE = (
+    "Na liniji je već neko vrijeme tišina. Pitaj kratko, jednom rečenicom, čuje li te osoba, "
+    "na primjer: „Halo, jesi li tu?“ Ne ponavljaj predstavljanje ni ponudu. Zatim slušaj."
+)
+
+# Zusatz zum Standard-Prompt der Anrufbeantworter-Erkennung von LiveKit (englisch, weil der
+# Standard-Prompt englisch ist). Anlass: Im Test vom 16.11. wurde „Halo“ als „Ona,“
+# transkribiert, die Erkennung hat abgewartet und Dinkos Begrüßung 6 Sekunden gesperrt.
+AMD_DODATAK = """Additional rules for this deployment:
+The calls go to mobile phones in Bosnia and Herzegovina. Transcripts are in Bosnian, Croatian or Serbian. Short answers are often transcribed incorrectly.
+
+A transcript that is only a short greeting or reply is a person who answered. This includes one or two words such as "Halo", "Molim", "Da", "Izvolite", "Ko je", a first name, or a single unclear word or fragment. Output human right away. Do not postpone for such transcripts.
+Postpone only when the transcript sounds like the beginning of a recorded announcement that is still running, for example "Korisnik kojeg ste", "Pretplatnik", "Birani broj", "Dobili ste govornu".
+
+Examples:
+Input: "Halo"
+Output: human
+
+Input: "Molim?"
+Output: human
+
+Input: "Ona,"
+Output: human
+
+Input: "Da, izvolite"
+Output: human
+
+Input: "Korisnik kojeg ste pozvali trenutno nije dostupan. Molimo pokušajte kasnije."
+Output: machine-unavailable
+
+Input: "Pretplatnik trenutno nije u mogućnosti da odgovori na vaš poziv. Ostavite poruku nakon zvučnog signala."
+Output: machine-vm"""
 GOVORNA_POSTA = (
     "Javila se govorna pošta. Reci kratko, na bosanskom, bez internih oznaka: da je zvao "
     "Dinko iz JobStepa zbog nove prilike za posao u Njemačkoj i da ćete se javiti ponovo. "

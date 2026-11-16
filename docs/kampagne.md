@@ -38,7 +38,15 @@ Sicherheitsnetze im Code:
 - Bleibt Dinko nach dem Abheben still, begrüßt der Code nach 4 Sekunden
   (`DINKO_GREETING_FALLBACK_S`, 0 schaltet es ab).
 - Ruft das Modell `end_call` nicht auf, legt der Code 30 Sekunden nach dem abschließenden
-  Ergebnis auf.
+  Ergebnis auf. Ist es nach dem Ergebnis still, schon nach `DINKO_SILENCE_S`.
+- Stille: Schweigen beide Seiten 7 Sekunden (`DINKO_SILENCE_S`), fragt Dinko „Halo, jesi li
+  tu?“. Kommt 8 Sekunden danach nichts (`DINKO_SILENCE_HANGUP_S`), legt der Code auf.
+  Höchstens zwei Nachfragen pro Anruf, bei der dritten Stille wird aufgelegt.
+- Obergrenze: Nach 8 Minuten (`DINKO_MAX_CALL_S`) legt der Code in jedem Fall auf.
+- Anrufbeantworter-Erkennung: Der LiveKit-Standard-Prompt wird um bosnische Beispiele
+  ergänzt (`prompts.AMD_DODATAK`). Kurze Meldungen wie „Halo“ oder „Molim“ gelten sofort
+  als Mensch, auch wenn sie falsch transkribiert sind. `DINKO_AMD_PROMPT=0` stellt den
+  Standard wieder her.
 - Datum und Uhrzeit rechnet der Code (`dinko_kampagne/zeit.py`), nicht das Modell.
 
 ## Airtable
