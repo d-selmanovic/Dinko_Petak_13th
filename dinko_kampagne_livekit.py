@@ -83,10 +83,19 @@ def _sekunden(name: str, standard: float) -> float:
 
 
 def _amd_optionen() -> dict:
-    """Erkennung mit bosnischen Beispielen. DINKO_AMD_PROMPT=0 nimmt den LiveKit-Standard."""
-    if AMD_PROMPT is None or os.getenv("DINKO_AMD_PROMPT", "1") != "1":
-        return {}
-    return {"prompt": AMD_PROMPT + "\n\n" + prompts.AMD_DODATAK}
+    """Erkennung mit bosnischen Beispielen und kürzerer Wartezeit auf das erste Wort.
+
+    DINKO_AMD_PROMPT=0 nimmt den LiveKit-Standard-Prompt. DINKO_AMD_NO_SPEECH_S ist die Zeit
+    nach dem Abheben, nach der die Erkennung ohne ein Wort der Person aufgibt
+    (``no_speech_timeout``); LiveKit-Standard sind zehn Sekunden. Danach sagt Dinko „Halo?“.
+    """
+    opts: dict = {}
+    if AMD_PROMPT is not None and os.getenv("DINKO_AMD_PROMPT", "1") == "1":
+        opts["prompt"] = AMD_PROMPT + "\n\n" + prompts.AMD_DODATAK
+    no_speech = _sekunden("DINKO_AMD_NO_SPEECH_S", 5.0)
+    if no_speech > 0:
+        opts["no_speech_threshold"] = no_speech
+    return opts
 
 
 def _stimme() -> str | dict[str, str]:
@@ -353,6 +362,16 @@ async def entrypoint(ctx: JobContext) -> None:
         session.reset_away_timer()
     except Exception:
         logger.exception("Stille-Zähler nicht neu gestartet")
+
+    # Abgenommen, aber still: nach DINKO_AMD_NO_SPEECH_S ohne ein Wort fragt Dinko kurz
+    # „Halo?“ und wartet. Die Vorstellung folgt erst auf eine Antwort (Regeln in POČETAK);
+    # bleibt es still, übernimmt die Stille-Behandlung (nachfragen, dann auflegen).
+    if stanje.amd == "uncertain" and amd_grund == "no_speech_timeout":
+        logger.info("Abgenommen, aber still – Dinko fragt „Halo?“")
+        try:
+            session.generate_reply(instructions=prompts.POZDRAV_TISINA)
+        except Exception:
+            logger.exception("„Halo?“ nach Stille fehlgeschlagen")
 
     # Sicherheitsnetz: Meldet sich ein Mensch und Dinko bleibt still, begrüßt der Code.
     try:

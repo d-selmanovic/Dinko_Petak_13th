@@ -39,6 +39,9 @@ Sicherheitsnetze im Code:
   besetzt, während der Erkennung aufgelegt – `participant_missing`,
   `participant_disconnected`), legt der Code sofort auf. Vorher wartete er 4 Sekunden und
   sprach die Begrüßung in den leeren Raum; am 16.11. betraf das 160 von 273 Anrufen.
+- Nimmt jemand ab und sagt 5 Sekunden lang nichts (`DINKO_AMD_NO_SPEECH_S`, 0 lässt den
+  LiveKit-Standard von 10 Sekunden), sagt Dinko nur kurz „Halo?“ und wartet. Vorgestellt wird
+  erst, wenn die Person antwortet.
 - Bleibt Dinko nach dem Abheben still, begrüßt der Code nach 4 Sekunden
   (`DINKO_GREETING_FALLBACK_S`, 0 schaltet es ab).
 - Ruft das Modell `end_call` nicht auf, legt der Code 30 Sekunden nach dem abschließenden
