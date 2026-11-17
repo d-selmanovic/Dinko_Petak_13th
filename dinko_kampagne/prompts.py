@@ -133,6 +133,11 @@ POZDRAV_REZERVA = (
     "JobStepa, i pitaj, samo imenom, razgovaraš li s osobom iz DINKO_CONTEXT.candidate. "
     "Zatim slušaj."
 )
+# Die Person hat abgenommen, aber noch nichts gesagt: nur kurz anklopfen, nicht vorstellen.
+POZDRAV_TISINA = (
+    "Osoba se javila na telefon, ali još ništa nije rekla. Reci samo kratko „Halo?“ i slušaj. "
+    "Ne predstavljaj se i ne iznosi ponudu dok osoba ne odgovori."
+)
 PROVJERA_TISINE = (
     "Na liniji je već neko vrijeme tišina. Pitaj kratko, jednom rečenicom, čuje li te osoba, "
     "na primjer: „Halo, jesi li tu?“ Ne ponavljaj predstavljanje ni ponudu. Zatim slušaj."

@@ -451,6 +451,30 @@ class LiveKit(unittest.TestCase):
         # Schweigen nach dem Abheben ist kein leerer Anruf: dort begrüßt der Code weiterhin.
         self.assertNotIn("no_speech_timeout", einstieg.LEERER_ANRUF)
 
+    def test_erkennung_wartet_kuerzer_auf_das_erste_wort(self):
+        import os
+        from unittest import mock
+
+        from livekit.agents.voice.amd.classifier import NO_SPEECH_THRESHOLD
+        from livekit.agents.voice.amd.detector import DetectionOptions
+
+        import dinko_kampagne_livekit as einstieg
+
+        self.assertIn("no_speech_threshold", DetectionOptions.__annotations__)
+        opts = einstieg._amd_optionen()
+        self.assertEqual(opts["no_speech_threshold"], 5.0)
+        self.assertLess(opts["no_speech_threshold"], NO_SPEECH_THRESHOLD)
+        with mock.patch.dict(os.environ, {"DINKO_AMD_PROMPT": "0", "DINKO_AMD_NO_SPEECH_S": "3"}):
+            opts = einstieg._amd_optionen()
+        self.assertNotIn("prompt", opts)
+        self.assertEqual(opts["no_speech_threshold"], 3.0)
+        with mock.patch.dict(os.environ, {"DINKO_AMD_NO_SPEECH_S": "0"}):
+            self.assertNotIn("no_speech_threshold", einstieg._amd_optionen())
+
+    def test_halo_nach_stille_stellt_sich_nicht_vor(self):
+        self.assertIn("„Halo?“", prompts.POZDRAV_TISINA)
+        self.assertIn("Ne predstavljaj se", prompts.POZDRAV_TISINA)
+
     def test_erkennung_und_stille_passen_zur_livekit_version(self):
         import inspect
 
