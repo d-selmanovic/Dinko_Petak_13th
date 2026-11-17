@@ -435,6 +435,22 @@ class LiveKit(unittest.TestCase):
         self.assertEqual(opts["reasoning"], {"effort": "low"})
         self.assertEqual(einstieg._stimme(), {"id": einstieg.STANDARD_STIMME})
 
+    def test_leerer_anruf_gruende_existieren_in_der_livekit_version(self):
+        """Die Gründe, bei denen sofort aufgelegt wird, muss das SDK so benennen."""
+        import inspect
+
+        from livekit.agents.voice.amd import detector
+        from livekit.agents.voice.amd.classifier import AMDPredictionEvent
+
+        import dinko_kampagne_livekit as einstieg
+
+        quelle = inspect.getsource(detector)
+        for grund in einstieg.LEERER_ANRUF:
+            self.assertIn(f'reason="{grund}"', quelle, grund)
+        self.assertIn("reason", AMDPredictionEvent.model_fields)
+        # Schweigen nach dem Abheben ist kein leerer Anruf: dort begrüßt der Code weiterhin.
+        self.assertNotIn("no_speech_timeout", einstieg.LEERER_ANRUF)
+
     def test_erkennung_und_stille_passen_zur_livekit_version(self):
         import inspect
 
