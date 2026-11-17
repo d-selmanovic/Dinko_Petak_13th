@@ -54,6 +54,10 @@ from dinko_kampagne.tisina import Tisina
 logger = logging.getLogger("dinko.kampagne")
 
 STANDARD_STIMME = "voice_6af797951df481919699d7e887688698"
+# AMD-Gründe, bei denen kein Mensch in der Leitung ist (livekit-agents 1.8: AMD settelt
+# „uncertain“ mit diesen reasons, wenn der Anruf vor dem Audio endet oder der Angerufene
+# während der Erkennung auflegt).
+LEERER_ANRUF = frozenset({"participant_missing", "participant_disconnected"})
 
 
 def _record_id(ctx: JobContext) -> str | None:
@@ -315,10 +319,20 @@ async def entrypoint(ctx: JobContext) -> None:
         ) as detector:
             amd = await detector.execute()
         stanje.amd = str(getattr(amd.category, "value", amd.category))
-        logger.info("AMD category=%s", stanje.amd)
+        amd_grund = str(getattr(amd, "reason", "") or "")
+        logger.info("AMD category=%s reason=%s", stanje.amd, amd_grund)
     except Exception:
         logger.exception("AMD fehlgeschlagen – weiter wie Mensch")
         stanje.amd = "fehler"
+        amd_grund = ""
+
+    # Niemand in der Leitung (nicht abgenommen, besetzt, aufgelegt): sofort beenden statt
+    # 4 s zu warten und in einen leeren Raum zu sprechen. Am 16.11. betraf das 160 von 273
+    # Anrufen; die Begrüßung ins Leere erzeugte „did not start speaking“-Fehler.
+    if stanje.amd == "uncertain" and amd_grund in LEERER_ANRUF:
+        logger.info("Niemand in der Leitung (%s) – auflegen", amd_grund)
+        ctx.shutdown(reason=f"no participant: {amd_grund}")
+        return
 
     if stanje.amd == "machine-vm":
         try:
